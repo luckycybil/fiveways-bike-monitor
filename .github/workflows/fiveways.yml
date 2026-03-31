@@ -1,0 +1,32 @@
+# Fiveways Bike Monitor — runs daily at 8:30am BST (07:30 UTC in summer, 08:30 UTC in winter)
+# Note: GitHub Actions uses UTC. BST is UTC+1 in summer, so we use 07:30 UTC.
+# In winter (GMT = UTC) it will run exactly at 08:30.
+
+name: Check Fiveways Bike Availability
+
+on:
+  schedule:
+    - cron: '30 7 * * *'   # 07:30 UTC = 08:30 BST (summer) / 08:30 GMT (winter)
+  workflow_dispatch:         # Also allows you to trigger it manually from GitHub
+
+jobs:
+  check-bikes:
+    runs-on: ubuntu-latest
+
+    steps:
+      # Step 1: Check out the repository so we can read/write files in it
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # Step 2: Run the Python script
+      - name: Check Fiveways availability
+        run: python check_fiveways.py
+
+      # Step 3: Commit the updated CSV log back to the repository
+      - name: Commit log update
+        run: |
+          git config user.name "Fiveways Bot"
+          git config user.email "bot@fiveways"
+          git add fiveways_log.csv
+          git diff --staged --quiet || git commit -m "Log: $(date -u +'%Y-%m-%d %H:%M UTC')"
+          git push
