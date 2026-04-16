@@ -15,3 +15,4 @@ date,time_utc,bikes_available,docks_available,bike_available_yn
 2026-04-13,09:19,0,6,NO
 2026-04-14,09:04,0,4,NO
 2026-04-15,09:04,0,4,NO
+2026-04-16,09:04,3,5,YES
