@@ -142,7 +142,7 @@ function render(rows) {
     const { yes, total } = dow[i];
     if (!total) return;
     const p = Math.round(yes / total * 100);
-    const color = p >= 50 ? '#2a9d5c' : '#e05c5c';
+    const color = p >= 90 ? '#2a9d5c' : p >= 67 ? '#e8a020' : '#e05c5c';
     html += `<div class="bar-row">
       <div class="bar-lbl">${dayNames[i]}</div>
       <div class="bar-track"><div class="bar-fill" style="width:${Math.max(p,10)}%;background:${color}">${p}%</div></div>
