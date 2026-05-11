@@ -1,0 +1,578 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Fiveways Beryl Monitor</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;700;800&family=JetBrains+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+<style>
+  :root {
+    --bg: #07090a;
+    --surface: #0d1214;
+    --border: #1a2428;
+    --green: #00e676;
+    --green-dim: #00c85a;
+    --green-muted: rgba(0,230,118,0.08);
+    --amber: #ffab00;
+    --red: #ff3d3d;
+    --text: #dce8ec;
+    --muted: #4a6472;
+    --font-display: 'Syne', sans-serif;
+    --font-mono: 'JetBrains Mono', monospace;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--font-mono);
+    min-height: 100vh;
+    padding: 32px 28px;
+    max-width: 960px;
+    margin: 0 auto;
+  }
+
+  /* HEADER */
+  header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    margin-bottom: 36px;
+    padding-bottom: 20px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .header-left h1 {
+    font-family: var(--font-display);
+    font-size: 2rem;
+    font-weight: 800;
+    letter-spacing: -0.02em;
+    line-height: 1;
+    color: #fff;
+  }
+
+  .header-left h1 span { color: var(--green); }
+
+  .header-sub {
+    font-size: 0.7rem;
+    color: var(--muted);
+    margin-top: 6px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+  }
+
+  .header-right {
+    text-align: right;
+  }
+
+  .live-dot {
+    display: inline-block;
+    width: 7px; height: 7px;
+    background: var(--green);
+    border-radius: 50%;
+    margin-right: 6px;
+    animation: pulse 2s ease-in-out infinite;
+  }
+
+  @keyframes pulse {
+    0%, 100% { opacity: 1; box-shadow: 0 0 0 0 rgba(0,230,118,0.4); }
+    50% { opacity: 0.7; box-shadow: 0 0 0 5px rgba(0,230,118,0); }
+  }
+
+  .last-updated {
+    font-size: 0.68rem;
+    color: var(--muted);
+  }
+
+  /* STATS GRID */
+  .stats-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+    margin-bottom: 20px;
+  }
+
+  @media (min-width: 560px) {
+    .stats-grid { grid-template-columns: repeat(4, 1fr); }
+  }
+
+  .stat {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 16px 18px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .stat::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 2px;
+    background: var(--green);
+    opacity: 0.4;
+  }
+
+  .stat.alert::before { background: var(--red); opacity: 0.7; }
+  .stat.warn::before { background: var(--amber); opacity: 0.6; }
+
+  .stat-label {
+    font-size: 0.62rem;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    margin-bottom: 10px;
+  }
+
+  .stat-value {
+    font-family: var(--font-display);
+    font-size: 2.2rem;
+    font-weight: 800;
+    line-height: 1;
+    color: var(--green);
+  }
+
+  .stat.alert .stat-value { color: var(--red); }
+  .stat.warn .stat-value { color: var(--amber); }
+
+  .stat-sub {
+    font-size: 0.62rem;
+    color: var(--muted);
+    margin-top: 5px;
+  }
+
+  /* TODAY BANNER */
+  .today-banner {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--green);
+    border-radius: 6px;
+    padding: 14px 18px;
+    margin-bottom: 20px;
+    font-size: 0.78rem;
+  }
+
+  .today-banner.no-bikes {
+    border-left-color: var(--red);
+  }
+
+  .today-status {
+    font-family: var(--font-display);
+    font-weight: 700;
+    font-size: 0.85rem;
+  }
+
+  .today-status.green { color: var(--green); }
+  .today-status.red { color: var(--red); }
+
+  .today-detail { color: var(--muted); font-size: 0.68rem; }
+
+  /* CHARTS */
+  .chart-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 20px;
+    margin-bottom: 16px;
+  }
+
+  .chart-label {
+    font-size: 0.62rem;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    margin-bottom: 16px;
+  }
+
+  /* CALENDAR */
+  .calendar-grid {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 4px;
+    margin-top: 4px;
+  }
+
+  .cal-day-header {
+    font-size: 0.58rem;
+    color: var(--muted);
+    text-align: center;
+    padding-bottom: 6px;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+  }
+
+  .cal-day {
+    aspect-ratio: 1;
+    border-radius: 3px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.6rem;
+    color: var(--muted);
+    background: #0d1214;
+    border: 1px solid var(--border);
+    cursor: default;
+    transition: transform 0.1s;
+    position: relative;
+  }
+
+  .cal-day:hover { transform: scale(1.15); z-index: 2; }
+
+  .cal-day.has-bikes { background: rgba(0,230,118,0.15); border-color: rgba(0,230,118,0.3); color: var(--green); }
+  .cal-day.no-bikes { background: rgba(255,61,61,0.1); border-color: rgba(255,61,61,0.25); color: #ff6b6b; }
+  .cal-day.empty { background: transparent; border-color: transparent; }
+
+  /* TABLE */
+  .table-wrap { overflow-x: auto; }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.72rem;
+  }
+
+  thead th {
+    font-size: 0.6rem;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--muted);
+    padding: 8px 12px;
+    border-bottom: 1px solid var(--border);
+    text-align: left;
+  }
+
+  tbody tr { border-bottom: 1px solid #0f181c; }
+  tbody tr:last-child { border-bottom: none; }
+  tbody tr:hover { background: rgba(255,255,255,0.02); }
+
+  td {
+    padding: 8px 12px;
+    color: #8fa8b2;
+  }
+
+  td:first-child { color: var(--muted); font-size: 0.65rem; }
+
+  .badge {
+    display: inline-block;
+    padding: 2px 9px;
+    border-radius: 3px;
+    font-size: 0.68rem;
+    font-weight: 500;
+  }
+
+  .badge-green { background: rgba(0,230,118,0.12); color: var(--green); }
+  .badge-amber { background: rgba(255,171,0,0.12); color: var(--amber); }
+  .badge-red { background: rgba(255,61,61,0.12); color: var(--red); }
+
+  /* ERROR */
+  #error {
+    display: none;
+    background: rgba(255,61,61,0.08);
+    border: 1px solid rgba(255,61,61,0.3);
+    color: var(--red);
+    padding: 14px 18px;
+    border-radius: 6px;
+    font-size: 0.78rem;
+    margin-bottom: 20px;
+  }
+
+  /* LOADING */
+  #loading {
+    text-align: center;
+    padding: 80px 20px;
+    font-size: 0.75rem;
+    color: var(--muted);
+  }
+
+  .loader {
+    display: inline-block;
+    width: 32px; height: 32px;
+    border: 2px solid var(--border);
+    border-top-color: var(--green);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+    margin-bottom: 16px;
+  }
+
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  #content { display: none; }
+
+  footer {
+    margin-top: 32px;
+    padding-top: 16px;
+    border-top: 1px solid var(--border);
+    font-size: 0.62rem;
+    color: var(--muted);
+    display: flex;
+    justify-content: space-between;
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="header-left">
+    <h1>Fiveways <span>Beryl</span></h1>
+    <div class="header-sub">Brighton · Bike availability monitor</div>
+  </div>
+  <div class="header-right">
+    <div class="last-updated"><span class="live-dot"></span><span id="updated-at">loading...</span></div>
+  </div>
+</header>
+
+<div id="error"></div>
+<div id="loading"><div class="loader"></div><br>Fetching data from GitHub...</div>
+
+<div id="content">
+  <div id="today-banner" class="today-banner">
+    <div>
+      <div class="stat-label" style="margin-bottom:3px">Today's reading</div>
+      <div id="today-status" class="today-status"></div>
+    </div>
+    <div id="today-detail" class="today-detail"></div>
+  </div>
+
+  <div class="stats-grid">
+    <div class="stat" id="card-streak">
+      <div class="stat-label">Current streak</div>
+      <div class="stat-value" id="val-streak">--</div>
+      <div class="stat-sub" id="sub-streak"></div>
+    </div>
+    <div class="stat">
+      <div class="stat-label">Availability rate</div>
+      <div class="stat-value" id="val-rate">--</div>
+      <div class="stat-sub" id="sub-rate"></div>
+    </div>
+    <div class="stat">
+      <div class="stat-label">Avg bikes (when in)</div>
+      <div class="stat-value" id="val-avg">--</div>
+      <div class="stat-sub">when available</div>
+    </div>
+    <div class="stat" id="card-zero">
+      <div class="stat-label">Zero-bike days</div>
+      <div class="stat-value" id="val-zero">--</div>
+      <div class="stat-sub" id="sub-zero"></div>
+    </div>
+  </div>
+
+  <div class="chart-card">
+    <div class="chart-label">Bikes available — daily readings</div>
+    <canvas id="timeChart" height="90"></canvas>
+  </div>
+
+  <div class="chart-card">
+    <div class="chart-label">Availability calendar</div>
+    <div class="calendar-grid" id="cal-headers">
+      <div class="cal-day-header">Mo</div>
+      <div class="cal-day-header">Tu</div>
+      <div class="cal-day-header">We</div>
+      <div class="cal-day-header">Th</div>
+      <div class="cal-day-header">Fr</div>
+      <div class="cal-day-header">Sa</div>
+      <div class="cal-day-header">Su</div>
+    </div>
+    <div class="calendar-grid" id="calendar"></div>
+  </div>
+
+  <div class="chart-card">
+    <div class="chart-label">Recent readings</div>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Date</th>
+            <th>Time (UTC)</th>
+            <th>Bikes</th>
+            <th>Docks</th>
+            <th>Status</th>
+          </tr>
+        </thead>
+        <tbody id="table-body"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<footer>
+  <span>Fiveways Beryl Station, Brighton</span>
+  <span id="footer-count"></span>
+</footer>
+
+<script>
+const CSV_URL = 'https://raw.githubusercontent.com/luckycybil/fiveways-bike-monitor/main/fiveways_log.csv';
+
+function parseCSV(text) {
+  const lines = text.trim().split('\n');
+  const headers = lines[0].split(',').map(h => h.trim());
+  return lines.slice(1).map(line => {
+    const vals = line.split(',');
+    const obj = {};
+    headers.forEach((h, i) => obj[h] = (vals[i] || '').trim());
+    return obj;
+  }).filter(r => r.date);
+}
+
+async function loadData() {
+  const res = await fetch(CSV_URL);
+  if (!res.ok) throw new Error(`HTTP ${res.status} fetching CSV`);
+  return parseCSV(await res.text());
+}
+
+function bikeBadge(n) {
+  if (n === 0) return `<span class="badge badge-red">0</span>`;
+  if (n <= 2) return `<span class="badge badge-amber">${n}</span>`;
+  return `<span class="badge badge-green">${n}</span>`;
+}
+
+function statusBadge(yn) {
+  return yn === 'YES'
+    ? `<span class="badge badge-green">Available</span>`
+    : `<span class="badge badge-red">None</span>`;
+}
+
+function render(rows) {
+  rows.sort((a, b) => a.date.localeCompare(b.date));
+
+  const latest = rows[rows.length - 1];
+  const total = rows.length;
+  const available = rows.filter(r => r.bike_available_yn === 'YES').length;
+  const rate = Math.round((available / total) * 100);
+  const zeroDays = rows.filter(r => parseInt(r.bikes_available) === 0).length;
+  const bikesWhenIn = rows.filter(r => parseInt(r.bikes_available) > 0).map(r => parseInt(r.bikes_available));
+  const avgWhenIn = bikesWhenIn.length ? (bikesWhenIn.reduce((s,v)=>s+v,0)/bikesWhenIn.length).toFixed(1) : '--';
+
+  // Streak
+  const reversed = [...rows].reverse();
+  const latestYN = latest.bike_available_yn;
+  let streak = 0;
+  for (const r of reversed) {
+    if (r.bike_available_yn === latestYN) streak++;
+    else break;
+  }
+
+  // Today banner
+  const latestBikes = parseInt(latest.bikes_available);
+  const hasBikes = latest.bike_available_yn === 'YES';
+  const banner = document.getElementById('today-banner');
+  banner.className = `today-banner${hasBikes ? '' : ' no-bikes'}`;
+  document.getElementById('today-status').className = `today-status ${hasBikes ? 'green' : 'red'}`;
+  document.getElementById('today-status').textContent = hasBikes
+    ? `${latestBikes} bike${latestBikes !== 1 ? 's' : ''} available`
+    : 'No bikes available';
+  document.getElementById('today-detail').innerHTML = `${latest.date} · ${latest.time_utc} UTC · ${latest.docks_available} docks`;
+
+  // Stats
+  document.getElementById('val-streak').textContent = streak;
+  document.getElementById('sub-streak').textContent = `day${streak !== 1 ? 's' : ''} ${hasBikes ? 'with bikes' : 'without'}`;
+  const cardStreak = document.getElementById('card-streak');
+  cardStreak.className = `stat ${hasBikes ? '' : 'alert'}`;
+
+  document.getElementById('val-rate').textContent = `${rate}%`;
+  document.getElementById('sub-rate').textContent = `${available} of ${total} days`;
+
+  document.getElementById('val-avg').textContent = avgWhenIn;
+
+  document.getElementById('val-zero').textContent = zeroDays;
+  document.getElementById('sub-zero').textContent = `of ${total} days total`;
+  const cardZero = document.getElementById('card-zero');
+  const zeroPct = zeroDays / total;
+  cardZero.className = `stat ${zeroPct > 0.5 ? 'alert' : zeroPct > 0.3 ? 'warn' : ''}`;
+
+  // Updated at
+  document.getElementById('updated-at').textContent = `Last reading: ${latest.date}`;
+
+  // Time chart
+  Chart.defaults.color = '#4a6472';
+  Chart.defaults.borderColor = '#1a2428';
+  Chart.defaults.font.family = 'JetBrains Mono';
+  Chart.defaults.font.size = 10;
+
+  const labels = rows.map(r => r.date.slice(5)); // MM-DD
+  const bikeVals = rows.map(r => parseInt(r.bikes_available));
+
+  new Chart(document.getElementById('timeChart'), {
+    type: 'bar',
+    data: {
+      labels,
+      datasets: [{
+        data: bikeVals,
+        backgroundColor: bikeVals.map(v => v === 0 ? 'rgba(255,61,61,0.5)' : v <= 2 ? 'rgba(255,171,0,0.5)' : 'rgba(0,230,118,0.5)'),
+        borderColor: bikeVals.map(v => v === 0 ? '#ff3d3d' : v <= 2 ? '#ffab00' : '#00e676'),
+        borderWidth: 1,
+        borderRadius: 2
+      }]
+    },
+    options: {
+      plugins: { legend: { display: false }, tooltip: {
+        callbacks: {
+          label: ctx => ` ${ctx.raw} bike${ctx.raw !== 1 ? 's' : ''}`
+        }
+      }},
+      scales: {
+        y: { min: 0, ticks: { stepSize: 1 }, grid: { color: '#111c22' } },
+        x: { grid: { display: false }, ticks: { maxTicksLimit: 12 } }
+      }
+    }
+  });
+
+  // Calendar
+  const cal = document.getElementById('calendar');
+  const firstDate = new Date(rows[0].date);
+  // Monday-based: 0=Mon...6=Sun
+  const firstDow = (firstDate.getDay() + 6) % 7;
+  for (let i = 0; i < firstDow; i++) {
+    const empty = document.createElement('div');
+    empty.className = 'cal-day empty';
+    cal.appendChild(empty);
+  }
+  rows.forEach(r => {
+    const d = document.createElement('div');
+    const bikes = parseInt(r.bikes_available);
+    d.className = `cal-day ${bikes > 0 ? 'has-bikes' : 'no-bikes'}`;
+    const dayNum = new Date(r.date).getDate();
+    d.textContent = dayNum;
+    d.title = `${r.date}: ${bikes} bike${bikes !== 1 ? 's' : ''}`;
+    cal.appendChild(d);
+  });
+
+  // Table — last 14 rows
+  const tbody = document.getElementById('table-body');
+  [...rows].reverse().slice(0, 20).forEach(r => {
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td>${r.date}</td>
+      <td>${r.time_utc}</td>
+      <td>${bikeBadge(parseInt(r.bikes_available))}</td>
+      <td>${r.docks_available}</td>
+      <td>${statusBadge(r.bike_available_yn)}</td>
+    `;
+    tbody.appendChild(tr);
+  });
+
+  document.getElementById('footer-count').textContent = `${total} readings`;
+}
+
+(async () => {
+  try {
+    const rows = await loadData();
+    document.getElementById('loading').style.display = 'none';
+    document.getElementById('content').style.display = 'block';
+    render(rows);
+  } catch (err) {
+    document.getElementById('loading').style.display = 'none';
+    const el = document.getElementById('error');
+    el.style.display = 'block';
+    el.textContent = `Failed to load data: ${err.message}`;
+  }
+})();
+</script>
+</body>
+</html>
