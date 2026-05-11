@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Fiveways Bike Monitor</title>
+<title>Beryl Bike Monitor</title>
 <style>
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f4f4f4; color: #333; padding: 24px 16px; }
@@ -26,7 +26,6 @@
   .legend span { display: flex; align-items: center; gap: 5px; }
   .dot { width: 10px; height: 10px; border-radius: 2px; display: inline-block; flex-shrink: 0; }
 
-  /* Calendar */
   .calendar { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; }
   .cal-hdr { font-size: 10px; color: #bbb; text-align: center; padding-bottom: 4px; }
   .cal-day { border-radius: 6px; padding: 5px 3px; text-align: center; }
@@ -36,19 +35,27 @@
   .cal-day.no { background: #e05c5c; color: white; }
   .cal-day.empty { background: transparent; }
 
-  /* Bar chart */
   .bar-row { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
   .bar-lbl { width: 34px; text-align: right; font-size: 12px; color: #777; flex-shrink: 0; }
   .bar-track { flex: 1; background: #eee; border-radius: 4px; height: 22px; }
   .bar-fill { height: 100%; border-radius: 4px; display: flex; align-items: center; padding-left: 8px; font-size: 11px; font-weight: 600; color: white; min-width: 32px; }
   .bar-meta { font-size: 11px; color: #bbb; width: 52px; flex-shrink: 0; }
 
-  .updated { font-size: 11px; color: #bbb; text-align: right; margin-top: 8px; }
+  .updated { font-size: 11px; color: #bbb; text-align: right; margin-top: 4px; margin-bottom: 16px; }
+
+  .provenance { background: white; border-radius: 10px; padding: 20px; margin-bottom: 16px; box-shadow: 0 1px 3px rgba(0,0,0,0.07); }
+  .provenance h2 { font-size: 11px; font-weight: 600; color: #aaa; text-transform: uppercase; letter-spacing: 0.6px; margin-bottom: 10px; }
+  .provenance p { font-size: 12px; color: #777; line-height: 1.6; margin-bottom: 10px; }
+  .provenance a { color: #2a9d5c; text-decoration: none; }
+  .provenance a:hover { text-decoration: underline; }
+  .chain { display: flex; align-items: center; gap: 6px; font-size: 12px; color: #999; flex-wrap: wrap; }
+  .chain-step { background: #f4f4f4; border-radius: 4px; padding: 4px 8px; color: #555; }
+  .chain-arrow { color: #ccc; }
 </style>
 </head>
 <body>
 <div class="container">
-  <h1>🚲 Fiveways Bike Monitor</h1>
+  <h1>🚲 Beryl Bike Monitor</h1>
   <p class="subtitle">Daily availability at ~08:30 BST · Fiveways, Brighton</p>
   <div id="content"><p class="loading">Loading data…</p></div>
 </div>
@@ -72,15 +79,13 @@ function render(rows) {
   const no = total - yes;
   const pct = Math.round(yes / total * 100);
 
-  // Group by month+year for calendars
   const months = {};
   rows.forEach(r => {
-    const key = r.date.slice(0, 7); // YYYY-MM
+    const key = r.date.slice(0, 7);
     if (!months[key]) months[key] = [];
     months[key].push(r);
   });
 
-  // Day-of-week analysis
   const dayNames = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
   const dow = Array(7).fill(null).map(() => ({yes:0, total:0}));
   rows.forEach(r => {
@@ -91,7 +96,6 @@ function render(rows) {
 
   let html = '';
 
-  // Stats
   html += `<div class="stats">
     <div class="stat"><div class="value">${total}</div><div class="label">Days logged</div></div>
     <div class="stat"><div class="value green">${yes}</div><div class="label">Days with bikes</div></div>
@@ -99,17 +103,13 @@ function render(rows) {
     <div class="stat"><div class="value">${pct}%</div><div class="label">Availability rate</div></div>
   </div>`;
 
-  // Calendar(s) — one per month
   Object.entries(months).forEach(([key, mRows]) => {
     const [year, month] = key.split('-').map(Number);
     const monthName = new Date(year, month - 1, 1).toLocaleString('en-GB', { month: 'long', year: 'numeric' });
-    const firstDow = new Date(year, month - 1, 1).getDay(); // 0=Sun
-    const startOffset = firstDow === 0 ? 6 : firstDow - 1; // Convert to Mon-start
-
-    // Build lookup
+    const firstDow = new Date(year, month - 1, 1).getDay();
+    const startOffset = firstDow === 0 ? 6 : firstDow - 1;
     const lookup = {};
     mRows.forEach(r => { lookup[parseInt(r.date.slice(8))] = r; });
-
     const daysInMonth = new Date(year, month, 0).getDate();
 
     html += `<div class="card"><h2>${monthName}</h2>
@@ -134,7 +134,6 @@ function render(rows) {
     html += `</div></div>`;
   });
 
-  // Day of week chart
   html += `<div class="card"><h2>Availability by day of week</h2>`;
   const order = [1,2,3,4,5,6,0];
   order.forEach(i => {
@@ -150,9 +149,23 @@ function render(rows) {
   });
   html += `</div>`;
 
-  // Last updated
   const last = rows[rows.length - 1];
   html += `<p class="updated">Last reading: ${last.date} at ${last.time_utc} UTC · ${last.bikes} bike(s) available</p>`;
+
+  html += `<div class="provenance">
+    <h2>About this data</h2>
+    <p>Bike availability is checked automatically every morning at approximately 08:30 BST using a scheduled script running on GitHub Actions. Each reading is a snapshot of live data from <a href="https://beryl.cc" target="_blank">Beryl's</a> publicly available <a href="https://en.wikipedia.org/wiki/General_Bikeshare_Feed_Specification" target="_blank">GBFS feed</a> for Brighton &amp; Hove, queried at station 7307 (Fiveways).</p>
+    <p>The full log and source code are openly published on GitHub and can be independently verified.</p>
+    <div class="chain">
+      <span class="chain-step">Beryl GBFS API</span>
+      <span class="chain-arrow">→</span>
+      <span class="chain-step">Python script (GitHub Actions)</span>
+      <span class="chain-arrow">→</span>
+      <span class="chain-step"><a href="https://github.com/luckycybil/fiveways-bike-monitor/blob/main/fiveways_log.csv" target="_blank">CSV log on GitHub</a></span>
+      <span class="chain-arrow">→</span>
+      <span class="chain-step">This dashboard</span>
+    </div>
+  </div>`;
 
   document.getElementById('content').innerHTML = html;
 }
