@@ -48,3 +48,4 @@ date,time_utc,bikes_available,docks_available,bike_available_yn
 2026-05-17,09:20,1,7,YES
 2026-05-18,11:30,2,5,YES
 2026-05-19,10:47,2,5,YES
+2026-05-20,10:34,0,7,NO
