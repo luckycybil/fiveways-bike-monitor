@@ -58,3 +58,4 @@ date,time_utc,bikes_available,docks_available,bike_available_yn
 2026-05-28,11:05,0,8,NO
 2026-05-29,10:56,0,8,NO
 2026-05-30,09:30,1,7,YES
+2026-05-31,10:00,2,5,YES
